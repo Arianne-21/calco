@@ -1,0 +1,340 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#f3f2ed" />
+    <meta name="description" content="Calculez le produit de deux matrices directement dans votre navigateur." />
+    <title>Calco — Produit de matrices</title>
+    <style>
+      @import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap');
+
+      :root {
+        color-scheme: light;
+        --paper: #f3f2ed;
+        --ink: #20231f;
+        --muted: #777a72;
+        --line: #d9d9d1;
+        --white: #fffefa;
+        --blue: #345ee8;
+        --blue-soft: #e8edff;
+        --coral: #e15b43;
+        --green: #2f7259;
+        font-family: 'DM Sans', sans-serif;
+      }
+
+      * { box-sizing: border-box; }
+      body { margin: 0; min-width: 320px; background: var(--paper); color: var(--ink); }
+      button, input { font: inherit; }
+      button { color: inherit; }
+
+      .topbar {
+        height: 58px; display: flex; align-items: center; justify-content: space-between;
+        padding: 0 5.2%; border-bottom: 1px solid var(--line); background: rgba(255, 254, 250, .55);
+      }
+      .brand { display: flex; align-items: center; gap: 10px; font: 700 17px 'Space Grotesk', sans-serif; letter-spacing: 0; }
+      .brand-mark { width: 23px; height: 23px; display: grid; place-items: center; background: var(--ink); color: var(--white); font: 500 15px 'DM Mono', monospace; }
+      .top-note { color: var(--muted); font: 11px 'DM Mono', monospace; letter-spacing: 0; text-transform: uppercase; }
+
+      main { width: min(1120px, 90%); margin: 0 auto; padding: 47px 0 54px; }
+      .heading { display: flex; align-items: flex-end; justify-content: space-between; gap: 24px; margin-bottom: 30px; }
+      .eyebrow { margin: 0 0 9px; color: var(--blue); font: 500 11px 'DM Mono', monospace; letter-spacing: 0; text-transform: uppercase; }
+      h1 { margin: 0; font: 600 clamp(28px, 4vw, 42px)/1.08 'Space Grotesk', sans-serif; letter-spacing: 0; }
+      .heading-note { max-width: 255px; margin: 0 0 3px; color: var(--muted); font-size: 13px; line-height: 1.55; }
+
+      .dimension-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 13px; padding: 13px 15px; border: 1px solid var(--line); background: var(--white); }
+      .dim-group { display: flex; align-items: center; gap: 8px; }
+      .dim-label { color: var(--muted); font: 11px 'DM Mono', monospace; text-transform: uppercase; }
+      .dim-input { width: 47px; height: 34px; padding: 0 7px; border: 1px solid var(--line); background: #fff; text-align: center; font: 14px 'DM Mono', monospace; }
+      .dim-input:focus, .cell:focus { outline: 2px solid var(--blue); outline-offset: 1px; }
+      .dim-times { color: #a4a59e; font: 15px 'DM Mono', monospace; }
+      .bar-divider { width: 1px; height: 24px; margin: 0 2px; background: var(--line); }
+      .bar-hint { margin-left: auto; color: var(--muted); font-size: 12px; }
+
+      .workspace { display: grid; grid-template-columns: minmax(0, 1fr) 42px minmax(0, 1fr) 42px minmax(0, 1fr); align-items: start; gap: 9px; margin-top: 21px; }
+      .matrix-panel { min-width: 0; }
+      .matrix-head { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 10px; }
+      .matrix-title { display: flex; align-items: center; gap: 8px; font: 600 14px 'Space Grotesk', sans-serif; }
+      .matrix-letter { color: var(--blue); font: 500 17px 'DM Mono', monospace; }
+      .matrix-size { color: var(--muted); font: 11px 'DM Mono', monospace; }
+      .matrix-frame { min-height: 174px; display: flex; justify-content: center; align-items: center; padding: 15px 8px; border: 1px solid var(--line); background: var(--white); overflow-x: auto; }
+      .matrix-grid { display: grid; gap: 5px; }
+      .cell { width: clamp(36px, 4vw, 48px); height: 36px; border: 1px solid #e6e5df; background: #fff; color: var(--ink); text-align: center; font: 13px 'DM Mono', monospace; }
+      .cell::placeholder { color: #b7b8b2; }
+      .result-frame { background: var(--blue-soft); border-color: #d5ddff; }
+      .result-grid .cell { border-color: #d5ddff; background: rgba(255,255,255,.82); color: #2548c3; }
+      .operator { display: grid; place-items: center; height: 174px; color: var(--coral); font: 22px 'DM Mono', monospace; }
+      .operator.equals { color: var(--muted); }
+
+      .actions { display: flex; align-items: center; flex-wrap: wrap; gap: 9px; margin-top: 18px; }
+      .primary, .secondary { min-height: 40px; padding: 0 15px; border: 1px solid var(--ink); cursor: pointer; transition: background .16s ease, color .16s ease, transform .16s ease; }
+      .primary { background: var(--ink); color: white; font-weight: 600; }
+      .primary:hover { background: var(--blue); border-color: var(--blue); transform: translateY(-1px); }
+      .secondary { background: transparent; color: var(--ink); }
+      .secondary:hover { background: var(--white); }
+      .secondary:disabled { opacity: .4; cursor: not-allowed; }
+      .status { min-height: 20px; margin-left: auto; color: var(--green); font-size: 12px; }
+      .status.error { color: #b63a2b; }
+
+      .method { display: flex; gap: 13px; align-items: center; margin-top: 34px; padding: 14px 0; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
+      .method-tag { flex: 0 0 auto; color: var(--coral); font: 500 10px 'DM Mono', monospace; text-transform: uppercase; }
+      .method p { margin: 0; color: #5d6059; font-size: 12px; line-height: 1.6; }
+      .formula { color: var(--ink); font: 12px 'DM Mono', monospace; }
+      footer { width: min(1120px, 90%); margin: 0 auto; padding: 0 0 20px; color: #96978f; font: 10px 'DM Mono', monospace; text-transform: uppercase; }
+
+      @media (max-width: 820px) {
+        main { padding-top: 35px; }
+        .workspace { grid-template-columns: minmax(0, 1fr) 26px minmax(0, 1fr); row-gap: 13px; }
+        .workspace .operator.equals { grid-column: 1; grid-row: 2; height: 26px; }
+        .workspace .matrix-panel.result-panel { grid-column: 2 / 4; grid-row: 2; }
+        .workspace .operator:not(.equals) { height: 174px; }
+        .workspace .operator.equals + .matrix-panel { }
+        .result-panel .matrix-frame { min-height: 130px; }
+        .heading-note { max-width: 200px; }
+      }
+      @media (max-width: 560px) {
+        .topbar { height: 50px; padding: 0 5%; }
+        .top-note { font-size: 9px; }
+        main, footer { width: 90%; }
+        main { padding: 29px 0 38px; }
+        .heading { display: block; margin-bottom: 21px; }
+        .heading-note { margin-top: 10px; max-width: 340px; }
+        .dimension-bar { gap: 9px; padding: 11px; }
+        .bar-hint { width: 100%; margin: 0; }
+        .workspace { grid-template-columns: minmax(0, 1fr) 22px minmax(0, 1fr); gap: 7px; }
+        .matrix-title { font-size: 12px; gap: 5px; }
+        .matrix-letter { font-size: 15px; }
+        .matrix-size { font-size: 9px; }
+        .matrix-frame { min-height: 150px; padding: 12px 5px; }
+        .operator { height: 150px !important; font-size: 18px; }
+        .cell { width: 34px; height: 32px; font-size: 12px; }
+        .workspace .operator.equals { height: 24px !important; }
+        .result-panel .matrix-frame { min-height: 120px; }
+        .actions { gap: 7px; }
+        .primary, .secondary { min-height: 38px; padding: 0 10px; font-size: 12px; }
+        .status { width: 100%; margin: 0; }
+        .method { align-items: flex-start; margin-top: 25px; }
+      }
+      @media (prefers-reduced-motion: reduce) { *, *::before, *::after { scroll-behavior: auto !important; transition-duration: .01ms !important; } }
+    </style>
+  </head>
+  <body>
+    <header class="topbar">
+      <div class="brand"><span class="brand-mark">×</span> calco</div>
+      <div class="top-note">Outil de calcul · algèbre linéaire</div>
+    </header>
+
+    <main>
+      <section class="heading" aria-labelledby="page-title">
+        <div>
+          <p class="eyebrow">01 / Multiplication</p>
+          <h1 id="page-title">Produit de matrices</h1>
+        </div>
+        <p class="heading-note">Saisissez vos valeurs, ajustez les dimensions et calculez le résultat.</p>
+      </section>
+
+      <section class="dimension-bar" aria-label="Dimensions des matrices">
+        <div class="dim-group">
+          <span class="dim-label">A</span>
+          <input class="dim-input" id="rowsA" type="number" min="1" max="8" value="2" aria-label="Nombre de lignes de A" />
+          <span class="dim-times">×</span>
+          <input class="dim-input" id="colsA" type="number" min="1" max="8" value="3" aria-label="Nombre de colonnes de A" />
+        </div>
+        <span class="bar-divider" aria-hidden="true"></span>
+        <div class="dim-group">
+          <span class="dim-label">B</span>
+          <span class="dim-input" id="rowsB" aria-label="Nombre de lignes de B">3</span>
+          <span class="dim-times">×</span>
+          <input class="dim-input" id="colsB" type="number" min="1" max="8" value="2" aria-label="Nombre de colonnes de B" />
+        </div>
+        <span class="bar-hint">Colonnes de A = lignes de B</span>
+      </section>
+
+      <section class="workspace" aria-label="Calcul matriciel">
+        <div class="matrix-panel">
+          <div class="matrix-head"><div class="matrix-title"><span class="matrix-letter">A</span> Matrice</div><span class="matrix-size" id="sizeA">2 × 3</span></div>
+          <div class="matrix-frame"><div class="matrix-grid" id="gridA" aria-label="Valeurs de la matrice A"></div></div>
+        </div>
+        <div class="operator" aria-hidden="true">×</div>
+        <div class="matrix-panel">
+          <div class="matrix-head"><div class="matrix-title"><span class="matrix-letter">B</span> Matrice</div><span class="matrix-size" id="sizeB">3 × 2</span></div>
+          <div class="matrix-frame"><div class="matrix-grid" id="gridB" aria-label="Valeurs de la matrice B"></div></div>
+        </div>
+        <div class="operator equals" aria-hidden="true">=</div>
+        <div class="matrix-panel result-panel">
+          <div class="matrix-head"><div class="matrix-title"><span class="matrix-letter">C</span> Résultat</div><span class="matrix-size" id="sizeC">2 × 2</span></div>
+          <div class="matrix-frame result-frame"><div class="matrix-grid result-grid" id="gridC" aria-live="polite"></div></div>
+        </div>
+      </section>
+
+      <div class="actions">
+        <button class="primary" id="calculate">Calculer A × B <span aria-hidden="true">↗</span></button>
+        <button class="secondary" id="example">Exemple</button>
+        <button class="secondary" id="clear">Effacer</button>
+        <button class="secondary" id="download" disabled>Télécharger CSV</button>
+        <span class="status" id="status" role="status" aria-live="polite"></span>
+      </div>
+
+      <aside class="method">
+        <span class="method-tag">Règle</span>
+        <p>Chaque case du résultat est la somme des produits d’une ligne de A par une colonne de B. <span class="formula">C[i,j] = Σ A[i,k] × B[k,j]</span></p>
+      </aside>
+    </main>
+    <footer>Calco · Calcul effectué localement dans votre navigateur</footer>
+
+    <script>
+      const maxDimension = 8;
+      const rowsAInput = document.querySelector('#rowsA');
+      const colsAInput = document.querySelector('#colsA');
+      const colsBInput = document.querySelector('#colsB');
+      const rowsBDisplay = document.querySelector('#rowsB');
+      const gridA = document.querySelector('#gridA');
+      const gridB = document.querySelector('#gridB');
+      const gridC = document.querySelector('#gridC');
+      const status = document.querySelector('#status');
+      let result = null;
+      let renderedDimensions = null;
+
+      function dimension(input) {
+        const value = Number.parseInt(input.value, 10);
+        return Number.isFinite(value) ? Math.min(maxDimension, Math.max(1, value)) : 1;
+      }
+
+      function createGrid(container, rows, columns, prefix, values = null) {
+        container.replaceChildren();
+        container.style.gridTemplateColumns = `repeat(${columns}, minmax(0, 1fr))`;
+        for (let row = 0; row < rows; row += 1) {
+          for (let column = 0; column < columns; column += 1) {
+            const cell = document.createElement('input');
+            cell.className = 'cell';
+            cell.type = 'number';
+            cell.step = 'any';
+            cell.inputMode = 'decimal';
+            cell.setAttribute('aria-label', `${prefix}, ligne ${row + 1}, colonne ${column + 1}`);
+            cell.placeholder = '0';
+            if (values?.[row]?.[column] !== undefined) cell.value = values[row][column];
+            container.append(cell);
+          }
+        }
+      }
+
+      function clearResult() {
+        result = null;
+        gridC.replaceChildren();
+        document.querySelector('#download').disabled = true;
+        status.textContent = '';
+        status.classList.remove('error');
+      }
+
+      function render() {
+        const rowsA = dimension(rowsAInput);
+        const colsA = dimension(colsAInput);
+        const colsB = dimension(colsBInput);
+        const previousA = renderedDimensions ? snapshotGrid(gridA, renderedDimensions.colsA) : null;
+        const previousB = renderedDimensions ? snapshotGrid(gridB, renderedDimensions.colsB) : null;
+        rowsAInput.value = rowsA;
+        colsAInput.value = colsA;
+        colsBInput.value = colsB;
+        rowsBDisplay.textContent = colsA;
+        document.querySelector('#sizeA').textContent = `${rowsA} × ${colsA}`;
+        document.querySelector('#sizeB').textContent = `${colsA} × ${colsB}`;
+        document.querySelector('#sizeC').textContent = `${rowsA} × ${colsB}`;
+        createGrid(gridA, rowsA, colsA, 'Matrice A', previousA);
+        createGrid(gridB, colsA, colsB, 'Matrice B', previousB);
+        renderedDimensions = { colsA, colsB };
+        clearResult();
+      }
+
+      function snapshotGrid(container, columns) {
+        const values = [];
+        container.querySelectorAll('input').forEach((cell, index) => {
+          const row = Math.floor(index / columns);
+          values[row] ??= [];
+          values[row].push(cell.value);
+        });
+        return values;
+      }
+
+      function readMatrix(container, rows, columns, label) {
+        const cells = [...container.querySelectorAll('input')];
+        const values = [];
+        for (let row = 0; row < rows; row += 1) {
+          const line = [];
+          for (let column = 0; column < columns; column += 1) {
+            const cell = cells[row * columns + column];
+            const value = Number(cell.value);
+            if (cell.value.trim() === '' || !Number.isFinite(value)) {
+              cell.focus();
+              throw new Error(`${label} : la case ligne ${row + 1}, colonne ${column + 1} doit contenir un nombre.`);
+            }
+            line.push(value);
+          }
+          values.push(line);
+        }
+        return values;
+      }
+
+      function calculate() {
+        clearResult();
+        try {
+          const rowsA = dimension(rowsAInput);
+          const colsA = dimension(colsAInput);
+          const colsB = dimension(colsBInput);
+          const matrixA = readMatrix(gridA, rowsA, colsA, 'Matrice A');
+          const matrixB = readMatrix(gridB, colsA, colsB, 'Matrice B');
+          result = Array.from({ length: rowsA }, (_, row) =>
+            Array.from({ length: colsB }, (_, column) =>
+              matrixA[row].reduce((sum, value, index) => sum + value * matrixB[index][column], 0)
+            )
+          );
+          createGrid(gridC, rowsA, colsB, 'Résultat', result.map(line => line.map(value => Number(value.toPrecision(10)))));
+          gridC.querySelectorAll('input').forEach(cell => { cell.readOnly = true; });
+          document.querySelector('#download').disabled = false;
+          status.textContent = `Calcul terminé · ${rowsA} × ${colsB}`;
+          status.classList.remove('error');
+        } catch (error) {
+          status.textContent = error.message;
+          status.classList.add('error');
+        }
+      }
+
+      function setExample() {
+        rowsAInput.value = 2;
+        colsAInput.value = 3;
+        colsBInput.value = 2;
+        render();
+        const valuesA = [[1, 2, 3], [4, 5, 6]];
+        const valuesB = [[7, 8], [9, 10], [11, 12]];
+        [gridA, gridB].forEach((grid, index) => {
+          const values = index === 0 ? valuesA : valuesB;
+          grid.querySelectorAll('input').forEach((cell, cellIndex) => {
+            cell.value = values[Math.floor(cellIndex / values[0].length)][cellIndex % values[0].length];
+          });
+        });
+        calculate();
+      }
+
+      function downloadCsv() {
+        if (!result) return;
+        const csv = result.map(row => row.join(';')).join('\r\n');
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(new Blob(['\ufeff', csv], { type: 'text/csv;charset=utf-8' }));
+        link.download = 'resultat-matrice.csv';
+        link.click();
+        URL.revokeObjectURL(link.href);
+      }
+
+      [rowsAInput, colsAInput, colsBInput].forEach(input => input.addEventListener('change', render));
+      document.querySelector('#calculate').addEventListener('click', calculate);
+      document.querySelector('#example').addEventListener('click', setExample);
+      document.querySelector('#clear').addEventListener('click', () => {
+        gridA.querySelectorAll('input').forEach(cell => { cell.value = ''; });
+        gridB.querySelectorAll('input').forEach(cell => { cell.value = ''; });
+        clearResult();
+        gridA.querySelector('input')?.focus();
+      });
+      document.querySelector('#download').addEventListener('click', downloadCsv);
+      render();
+    </script>
+  </body>
+</html>
